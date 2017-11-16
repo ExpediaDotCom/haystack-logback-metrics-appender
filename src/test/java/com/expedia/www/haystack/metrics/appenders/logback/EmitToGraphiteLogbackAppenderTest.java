@@ -93,7 +93,6 @@ public class EmitToGraphiteLogbackAppenderTest {
         emitToGraphiteLogbackAppender.setQueuesize(QUEUE_SIZE);
         METRIC_PUBLISHING.set(null);
         ERRORS_COUNTERS.clear();
-        when(mockFactory.createMetricPublishing()).thenReturn(mockMetricPublishing);
     }
 
     private void stubOutStaticDependencies() {

@@ -47,7 +47,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
     static MetricObjects metricObjects = new MetricObjects();
 
-    private String address = "localhost";
+    private String address = "haystack.local"; // this is the value used by Minikube
     private int port = 2003;
     private int pollintervalseconds = 60;
     private int queuesize = 10;
@@ -62,7 +62,8 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         // Logback configuration uses setters
     }
 
-    // Setters are used by logback to configure the Appender
+    // Setters are used by logback to configure the Appender.
+    // They don't need to be public, and will not show up in JavaDoc.
     void setAddress(String address) {
         this.address = address;
     }

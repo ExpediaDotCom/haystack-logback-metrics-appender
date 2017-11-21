@@ -35,6 +35,7 @@ import static ch.qos.logback.classic.Level.ERROR;
 /**
  * A logback appender that sends an error count to a graphite endpoint.
  */
+@SuppressWarnings("WeakerAccess") // for the setter methods that need to be public to be used by other packages
 public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
     static Factory factory = new Factory();
@@ -63,17 +64,16 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     }
 
     // Setters are used by logback to configure the Appender.
-    // They don't need to be public, and will not show up in JavaDoc.
-    void setAddress(String address) {
+    public void setAddress(String address) {
         this.address = address;
     }
-    void setPort(int port) {
+    public void setPort(int port) {
         this.port = port;
     }
-    void setPollintervalseconds(int pollintervalseconds) {
+    public void setPollintervalseconds(int pollintervalseconds) {
         this.pollintervalseconds = pollintervalseconds;
     }
-    void setQueuesize(int queuesize) {
+    public void setQueuesize(int queuesize) {
         this.queuesize = queuesize;
     }
 

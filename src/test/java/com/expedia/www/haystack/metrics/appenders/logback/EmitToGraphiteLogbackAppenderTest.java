@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 public class EmitToGraphiteLogbackAppenderTest {
     private static final Random RANDOM = new Random();
     private static final String APPLICATION = RANDOM.nextLong() + "APPLICATION";
-    private static final String ADDRESS = RANDOM.nextLong() + "ADDRESS";
+    private static final String HOST = RANDOM.nextLong() + "HOST";
     private static final int PORT = RANDOM.nextInt(Character.MAX_VALUE);
     private static final int POLL_INTERVAL_SECONDS = RANDOM.nextInt(Byte.MAX_VALUE);
     private static final int QUEUE_SIZE = RANDOM.nextInt(Byte.MAX_VALUE);
@@ -87,7 +87,7 @@ public class EmitToGraphiteLogbackAppenderTest {
     public void setUp() {
         stubOutStaticDependencies();
         emitToGraphiteLogbackAppender = new EmitToGraphiteLogbackAppender();
-        emitToGraphiteLogbackAppender.setAddress(ADDRESS);
+        emitToGraphiteLogbackAppender.setHost(HOST);
         emitToGraphiteLogbackAppender.setPort(PORT);
         emitToGraphiteLogbackAppender.setPollintervalseconds(POLL_INTERVAL_SECONDS);
         emitToGraphiteLogbackAppender.setQueuesize(QUEUE_SIZE);
@@ -138,12 +138,12 @@ public class EmitToGraphiteLogbackAppenderTest {
 
     @Test
     public void testStartMetricPublishingBackgroundThreadIfNotAlreadyStartedWhenAlreadyStarted() {
-        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(ADDRESS, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
+        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
         when(mockFactory.createMetricPublishing()).thenReturn(mockMetricPublishing);
 
         for (int i = 0; i < NUMBER_OF_ITERATIONS_IN_TESTS; i++) {
             EmitToGraphiteLogbackAppender.startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
-                    ADDRESS, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
+                    HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
         }
 
         verify(mockFactory, times(NUMBER_OF_ITERATIONS_IN_TESTS)).createMetricPublishing();

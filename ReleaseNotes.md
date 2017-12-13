@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.1.4 / 2017-12-01 Upgrade haystack-metrics to 0.2.9, use new ResettingNonRateCounter
+This is so that the metric produced when an error occurs will be a count, not a rate.
+
 ## 0.1.3 / 2017-12-01 Upgrade haystack-metrics to 0.2.7
 This resulted in the renaming of variables and methods to refer to "host" instead of "address"
 and is done to have a consistent name across all of Haystack.

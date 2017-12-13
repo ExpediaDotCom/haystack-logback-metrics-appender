@@ -130,7 +130,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     static class Factory {
 
         Counter createCounter(String application, String className, String counterName) {
-            return metricObjects.createAndRegisterCounter(SUBSYSTEM, application, className, counterName);
+            return metricObjects.createAndRegisterResettingNonRateCounter(SUBSYSTEM, application, className, counterName);
         }
 
         MetricPublishing createMetricPublishing() {

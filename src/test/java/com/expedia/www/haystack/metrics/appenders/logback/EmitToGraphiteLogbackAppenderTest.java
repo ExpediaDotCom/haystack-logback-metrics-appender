@@ -116,13 +116,13 @@ public class EmitToGraphiteLogbackAppenderTest {
 
     @Test
     public void testFactoryCreateCounter() {
-        when(mockMetricObjects.createAndRegisterCounter(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(mockCounter);
+        when(mockMetricObjects.createAndRegisterResettingNonRateCounter(
+                anyString(), anyString(), anyString(), anyString())).thenReturn(mockCounter);
 
         final Counter counter = realFactory.createCounter(APPLICATION, FULLY_QUALIFIED_CLASS_NAME, COUNTER_NAME);
 
         assertSame(mockCounter, counter);
-        verify(mockMetricObjects).createAndRegisterCounter(
+        verify(mockMetricObjects).createAndRegisterResettingNonRateCounter(
                 SUBSYSTEM, APPLICATION, FULLY_QUALIFIED_CLASS_NAME, COUNTER_NAME);
     }
 

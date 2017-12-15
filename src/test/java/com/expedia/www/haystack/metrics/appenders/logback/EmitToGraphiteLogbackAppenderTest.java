@@ -59,6 +59,7 @@ public class EmitToGraphiteLogbackAppenderTest {
     private static final int PORT = RANDOM.nextInt(Character.MAX_VALUE);
     private static final int POLL_INTERVAL_SECONDS = RANDOM.nextInt(Byte.MAX_VALUE);
     private static final int QUEUE_SIZE = RANDOM.nextInt(Byte.MAX_VALUE);
+    private static final boolean SEND_AS_RATE = RANDOM.nextBoolean();
     private static final int NUMBER_OF_ITERATIONS_IN_TESTS = 2;
     private static final Class<EmitToGraphiteLogbackAppenderTest> CLASS = EmitToGraphiteLogbackAppenderTest.class;
     private static final String FULLY_QUALIFIED_CLASS_NAME = CLASS.getName().replace('.', '-');
@@ -91,6 +92,7 @@ public class EmitToGraphiteLogbackAppenderTest {
         emitToGraphiteLogbackAppender.setPort(PORT);
         emitToGraphiteLogbackAppender.setPollintervalseconds(POLL_INTERVAL_SECONDS);
         emitToGraphiteLogbackAppender.setQueuesize(QUEUE_SIZE);
+        emitToGraphiteLogbackAppender.setSendasrate(SEND_AS_RATE);
         METRIC_PUBLISHING.set(null);
         ERRORS_COUNTERS.clear();
     }
@@ -116,13 +118,13 @@ public class EmitToGraphiteLogbackAppenderTest {
 
     @Test
     public void testFactoryCreateCounter() {
-        when(mockMetricObjects.createAndRegisterResettingNonRateCounter(
+        when(mockMetricObjects.createAndRegisterResettingCounter(
                 anyString(), anyString(), anyString(), anyString())).thenReturn(mockCounter);
 
         final Counter counter = realFactory.createCounter(APPLICATION, FULLY_QUALIFIED_CLASS_NAME, COUNTER_NAME);
 
         assertSame(mockCounter, counter);
-        verify(mockMetricObjects).createAndRegisterResettingNonRateCounter(
+        verify(mockMetricObjects).createAndRegisterResettingCounter(
                 SUBSYSTEM, APPLICATION, FULLY_QUALIFIED_CLASS_NAME, COUNTER_NAME);
     }
 
@@ -138,12 +140,13 @@ public class EmitToGraphiteLogbackAppenderTest {
 
     @Test
     public void testStartMetricPublishingBackgroundThreadIfNotAlreadyStartedWhenAlreadyStarted() {
-        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
+        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
+                HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE, SEND_AS_RATE);
         when(mockFactory.createMetricPublishing()).thenReturn(mockMetricPublishing);
 
         for (int i = 0; i < NUMBER_OF_ITERATIONS_IN_TESTS; i++) {
             EmitToGraphiteLogbackAppender.startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
-                    HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE);
+                    HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE, SEND_AS_RATE);
         }
 
         verify(mockFactory, times(NUMBER_OF_ITERATIONS_IN_TESTS)).createMetricPublishing();

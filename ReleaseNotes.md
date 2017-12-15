@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.1.5 / 2017-12-15 Upgrade haystack-metrics to 0.4.0, use new ResettingCounter
+0.1.4 didn't work properly because more changes to haystack-metrics were needed.
+
 ## 0.1.4 / 2017-12-01 Upgrade haystack-metrics to 0.2.9, use new ResettingNonRateCounter
 This is so that the metric produced when an error occurs will be a count, not a rate.
 

@@ -52,10 +52,11 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     private int port = 2003;
     private int pollintervalseconds = 60;
     private int queuesize = 10;
+    private boolean sendasrate = false;
 
     /**
-     * The default and only constructor. Logback configuration uses setters, but of the four values needed
-     * (host, port, poll interval, and queue size), all but host are set to sensible values and probably
+     * The default and only constructor. Logback configuration uses setters, but of the five values needed
+     * (host, port, poll interval, send as rate, and queue size), all but host are set to sensible values and probably
      * don't need to be configured. The host should be set to the DNS name or IP host of the Graphite endpoint
      * you wish to receive counts of errors.
      */
@@ -76,6 +77,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     public void setQueuesize(int queuesize) {
         this.queuesize = queuesize;
     }
+    public void setSendasrate(boolean sendasrate) {
+        this.sendasrate = sendasrate;
+    }
 
     /**
      * Starts the appender by starting a background thread to poll the error counters and publish them to Graphite.
@@ -83,15 +87,17 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
      */
     @Override
     public void start() {
-        startMetricPublishingBackgroundThreadIfNotAlreadyStarted(host, port, pollintervalseconds, queuesize);
+        startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
+                host, port, pollintervalseconds, queuesize, sendasrate);
         super.start();
     }
 
     @VisibleForTesting
     static void startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
-            String host, int port, int pollintervalseconds, int queuesize) {
+            String host, int port, int pollintervalseconds, int queuesize, boolean sendasrate) {
         if (METRIC_PUBLISHING.compareAndSet(null, factory.createMetricPublishing())) {
-            final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(host, port, pollintervalseconds, queuesize);
+            final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
+                    host, port, pollintervalseconds, queuesize, sendasrate);
             METRIC_PUBLISHING.get().start(graphiteConfig);
         }
     }
@@ -130,7 +136,8 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     static class Factory {
 
         Counter createCounter(String application, String className, String counterName) {
-            return metricObjects.createAndRegisterResettingNonRateCounter(SUBSYSTEM, application, className, counterName);
+            return metricObjects.createAndRegisterResettingCounter(
+                    SUBSYSTEM, application, className, counterName);
         }
 
         MetricPublishing createMetricPublishing() {

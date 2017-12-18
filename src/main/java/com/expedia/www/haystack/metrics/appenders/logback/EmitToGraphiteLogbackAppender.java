@@ -17,8 +17,8 @@
 package com.expedia.www.haystack.metrics.appenders.logback;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.AppenderBase;
 import com.expedia.www.haystack.metrics.GraphiteConfig;
 import com.expedia.www.haystack.metrics.GraphiteConfigImpl;
 import com.expedia.www.haystack.metrics.MetricObjects;
@@ -28,7 +28,6 @@ import com.netflix.servo.util.VisibleForTesting;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static ch.qos.logback.classic.Level.ERROR;
 
@@ -44,9 +43,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
     static final Map<Integer, Counter> ERRORS_COUNTERS = new ConcurrentHashMap<>();
     @VisibleForTesting
-    static final AtomicReference<MetricPublishing> METRIC_PUBLISHING = new AtomicReference<>(null);
-    @VisibleForTesting
     static MetricObjects metricObjects = new MetricObjects();
+
+    private final MetricPublishing metricPublishing;
 
     private String host = "haystack.local"; // this is the value used by Minikube
     private int port = 2003;
@@ -55,13 +54,18 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     private boolean sendasrate = false;
 
     /**
-     * The default and only constructor. Logback configuration uses setters, but of the five values needed
+     * The default constructor, used by logback. Logback configuration uses setters, but of the five values needed
      * (host, port, poll interval, send as rate, and queue size), all but host are set to sensible values and probably
      * don't need to be configured. The host should be set to the DNS name or IP host of the Graphite endpoint
      * you wish to receive counts of errors.
      */
     public EmitToGraphiteLogbackAppender() {
-        // Logback configuration uses setters
+        this(new MetricPublishing());
+    }
+
+    @VisibleForTesting
+    EmitToGraphiteLogbackAppender(MetricPublishing metricPublishing) {
+        this.metricPublishing = metricPublishing;
     }
 
     // Setters are used by logback to configure the Appender.
@@ -87,19 +91,28 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
      */
     @Override
     public void start() {
-        startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
+        startMetricPublishingBackgroundThread(
                 host, port, pollintervalseconds, queuesize, sendasrate);
         super.start();
+        factory.createStartUpMetric().emit(factory);
+    }
+
+    /**
+     * Stops the appender, shutting down the background polling thread to ensure that the connection to the metrics
+     * database is closed.
+     */
+    @Override
+    public void stop() {
+        super.stop();
+        metricPublishing.stop();
     }
 
     @VisibleForTesting
-    static void startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
+    void startMetricPublishingBackgroundThread(
             String host, int port, int pollintervalseconds, int queuesize, boolean sendasrate) {
-        if (METRIC_PUBLISHING.compareAndSet(null, factory.createMetricPublishing())) {
-            final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
-                    host, port, pollintervalseconds, queuesize, sendasrate);
-            METRIC_PUBLISHING.get().start(graphiteConfig);
-        }
+        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
+                host, port, pollintervalseconds, queuesize, sendasrate);
+        metricPublishing.start(graphiteConfig);
     }
 
     @Override
@@ -119,7 +132,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     private Counter getCounter(Level level, StackTraceElement stackTraceElement, int hashCode) {
         if (!ERRORS_COUNTERS.containsKey(hashCode)) {
-            final String fullyQualifiedClassName = stackTraceElement.getClassName().replace('.', '-');
+            final String fullyQualifiedClassName = changePeriodsToDashes(stackTraceElement.getClassName());
             final String lineNumber = Integer.toString(stackTraceElement.getLineNumber());
             final Counter counter = factory.createCounter(fullyQualifiedClassName, lineNumber, level.toString());
 
@@ -132,6 +145,10 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         return ERRORS_COUNTERS.get(hashCode);
     }
 
+    static String changePeriodsToDashes(String fullyQualifiedClassName) {
+        return fullyQualifiedClassName.replace('.', '-');
+    }
+
     @VisibleForTesting
     static class Factory {
 
@@ -140,8 +157,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
                     SUBSYSTEM, application, className, counterName);
         }
 
-        MetricPublishing createMetricPublishing() {
-            return new MetricPublishing();
+        StartUpMetric createStartUpMetric() {
+            return new StartUpMetric();
         }
     }
+
 }

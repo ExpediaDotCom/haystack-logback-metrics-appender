@@ -41,10 +41,11 @@ import static ch.qos.logback.classic.Level.INFO;
 import static ch.qos.logback.classic.Level.TRACE;
 import static ch.qos.logback.classic.Level.WARN;
 import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_COUNTERS;
-import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.METRIC_PUBLISHING;
 import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.SUBSYSTEM;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,6 +65,8 @@ public class EmitToGraphiteLogbackAppenderTest {
     private static final Class<EmitToGraphiteLogbackAppenderTest> CLASS = EmitToGraphiteLogbackAppenderTest.class;
     private static final String FULLY_QUALIFIED_CLASS_NAME = CLASS.getName().replace('.', '-');
     private static final String COUNTER_NAME = ERROR.toString();
+    private static final GraphiteConfig GRAPHITE_CONFIG = new GraphiteConfigImpl(
+            HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE, SEND_AS_RATE);
 
     @Mock
     private EmitToGraphiteLogbackAppender.Factory mockFactory;
@@ -82,18 +85,20 @@ public class EmitToGraphiteLogbackAppenderTest {
     @Mock
     private ILoggingEvent mockLoggingEvent;
 
+    @Mock
+    private StartUpMetric mockStartUpMetric;
+
     private EmitToGraphiteLogbackAppender emitToGraphiteLogbackAppender;
 
     @Before
     public void setUp() {
         stubOutStaticDependencies();
-        emitToGraphiteLogbackAppender = new EmitToGraphiteLogbackAppender();
+        emitToGraphiteLogbackAppender = new EmitToGraphiteLogbackAppender(mockMetricPublishing);
         emitToGraphiteLogbackAppender.setHost(HOST);
         emitToGraphiteLogbackAppender.setPort(PORT);
         emitToGraphiteLogbackAppender.setPollintervalseconds(POLL_INTERVAL_SECONDS);
         emitToGraphiteLogbackAppender.setQueuesize(QUEUE_SIZE);
         emitToGraphiteLogbackAppender.setSendasrate(SEND_AS_RATE);
-        METRIC_PUBLISHING.set(null);
         ERRORS_COUNTERS.clear();
     }
 
@@ -108,7 +113,8 @@ public class EmitToGraphiteLogbackAppenderTest {
     @After
     public void tearDown() {
         restoreStaticDependencies();
-        verifyNoMoreInteractions(mockFactory, mockCounter, mockMetricObjects, mockMetricPublishing, mockLoggingEvent);
+        verifyNoMoreInteractions(mockFactory, mockCounter, mockMetricObjects, mockMetricPublishing, mockLoggingEvent,
+                mockStartUpMetric);
     }
 
     private void restoreStaticDependencies() {
@@ -139,27 +145,32 @@ public class EmitToGraphiteLogbackAppenderTest {
     }
 
     @Test
-    public void testStartMetricPublishingBackgroundThreadIfNotAlreadyStartedWhenAlreadyStarted() {
-        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
-                HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE, SEND_AS_RATE);
-        when(mockFactory.createMetricPublishing()).thenReturn(mockMetricPublishing);
-
-        for (int i = 0; i < NUMBER_OF_ITERATIONS_IN_TESTS; i++) {
-            EmitToGraphiteLogbackAppender.startMetricPublishingBackgroundThreadIfNotAlreadyStarted(
-                    HOST, PORT, POLL_INTERVAL_SECONDS, QUEUE_SIZE, SEND_AS_RATE);
-        }
-
-        verify(mockFactory, times(NUMBER_OF_ITERATIONS_IN_TESTS)).createMetricPublishing();
-        verify(mockMetricPublishing).start(graphiteConfig);
-    }
-
-    @Test
     public void testAppendLevelNotSevereEnoughToCount() {
         when(mockLoggingEvent.getLevel()).thenReturn(INFO);
 
         emitToGraphiteLogbackAppender.append(mockLoggingEvent);
 
         verify(mockLoggingEvent).getLevel();
+    }
+
+    @Test
+    public void testStart() {
+        when(mockFactory.createStartUpMetric()).thenReturn(mockStartUpMetric);
+
+        emitToGraphiteLogbackAppender.start();
+
+        assertTrue(emitToGraphiteLogbackAppender.isStarted());
+        verify(mockFactory).createStartUpMetric();
+        verify(mockStartUpMetric).emit(mockFactory);
+        verify(mockMetricPublishing).start(GRAPHITE_CONFIG);
+    }
+
+    @Test
+    public void testStop() {
+        emitToGraphiteLogbackAppender.stop();
+
+        assertFalse(emitToGraphiteLogbackAppender.isStarted());
+        verify(mockMetricPublishing).stop();
     }
 
     @Test

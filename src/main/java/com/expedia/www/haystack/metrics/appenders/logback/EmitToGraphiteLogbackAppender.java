@@ -27,6 +27,7 @@ import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.util.VisibleForTesting;
 
 import java.util.Map;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ch.qos.logback.classic.Level.ERROR;
@@ -37,15 +38,13 @@ import static ch.qos.logback.classic.Level.ERROR;
 @SuppressWarnings("WeakerAccess") // for the setter methods that need to be public to be used by other packages
 public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
-    static Factory factory = new Factory();
-    @VisibleForTesting
     static final String SUBSYSTEM = "errors";
     @VisibleForTesting
-    static final Map<Integer, Counter> ERRORS_COUNTERS = new ConcurrentHashMap<>();
-    @VisibleForTesting
-    static MetricObjects metricObjects = new MetricObjects();
+    static final Map<String, Counter> ERRORS_COUNTERS = new ConcurrentHashMap<>();
 
     private final MetricPublishing metricPublishing;
+    private final MetricObjects metricObjects;
+    private final Factory factory;
 
     private String host = "haystack.local"; // this is the value used by Minikube
     private int port = 2003;
@@ -60,12 +59,14 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
      * you wish to receive counts of errors.
      */
     public EmitToGraphiteLogbackAppender() {
-        this(new MetricPublishing());
+        this(new MetricPublishing(), new MetricObjects(), new Factory());
     }
 
     @VisibleForTesting
-    EmitToGraphiteLogbackAppender(MetricPublishing metricPublishing) {
+    EmitToGraphiteLogbackAppender(MetricPublishing metricPublishing, MetricObjects metricObjects, Factory factory) {
         this.metricPublishing = metricPublishing;
+        this.metricObjects = metricObjects;
+        this.factory = factory;
     }
 
     // Setters are used by logback to configure the Appender.
@@ -94,7 +95,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         startMetricPublishingBackgroundThread(
                 host, port, pollintervalseconds, queuesize, sendasrate);
         super.start();
-        factory.createStartUpMetric().emit(factory);
+        factory.createStartUpMetric(metricObjects, new Timer());
     }
 
     /**
@@ -121,7 +122,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         if (isLevelSevereEnoughToCount(level)) {
             final StackTraceElement[] stackTraceElements = logEvent.getCallerData();
             final StackTraceElement stackTraceElement = stackTraceElements[0];
-            getCounter(level, stackTraceElement, stackTraceElement.hashCode()).increment();
+            getCounter(level, stackTraceElement).increment();
         }
     }
 
@@ -130,19 +131,22 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         return level == ERROR;
     }
 
-    private Counter getCounter(Level level, StackTraceElement stackTraceElement, int hashCode) {
-        if (!ERRORS_COUNTERS.containsKey(hashCode)) {
-            final String fullyQualifiedClassName = changePeriodsToDashes(stackTraceElement.getClassName());
-            final String lineNumber = Integer.toString(stackTraceElement.getLineNumber());
-            final Counter counter = factory.createCounter(fullyQualifiedClassName, lineNumber, level.toString());
+    @VisibleForTesting
+    Counter getCounter(Level level, StackTraceElement stackTraceElement) {
+        final String fullyQualifiedClassName = changePeriodsToDashes(stackTraceElement.getClassName());
+        final String lineNumber = Integer.toString(stackTraceElement.getLineNumber());
+        final String key = fullyQualifiedClassName + ':' + lineNumber;
+        if (!ERRORS_COUNTERS.containsKey(key)) {
+            final Counter counter = factory.createCounter(
+                    metricObjects, fullyQualifiedClassName, lineNumber, level.toString());
 
             // It is possible but highly unlikely that two threads are in this if() block at the same time; if that
             // occurs, only one of the calls to ERRORS_COUNTERS.putIfAbsent(hashCode, counter) in the next line of code
             // will succeed, but the increment of the thread whose call did not succeed will not be lost, because the
             // value returned by this method will be the Counter put successfully by the other thread.
-            ERRORS_COUNTERS.putIfAbsent(hashCode, counter);
+            ERRORS_COUNTERS.putIfAbsent(key, counter);
         }
-        return ERRORS_COUNTERS.get(hashCode);
+        return ERRORS_COUNTERS.get(key);
     }
 
     static String changePeriodsToDashes(String fullyQualifiedClassName) {
@@ -152,14 +156,15 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
     static class Factory {
 
-        Counter createCounter(String application, String className, String counterName) {
+        Counter createCounter(MetricObjects metricObjects, String application, String className, String counterName) {
             return metricObjects.createAndRegisterResettingCounter(
                     SUBSYSTEM, application, className, counterName);
         }
 
-        StartUpMetric createStartUpMetric() {
-            return new StartUpMetric();
+        StartUpMetric createStartUpMetric(MetricObjects metricObjects, Timer timer) {
+            return new StartUpMetric(timer, this, metricObjects);
         }
+
     }
 
 }

@@ -17,17 +17,24 @@
 package com.expedia.www.haystack.metrics.appenders.logback;
 
 import ch.qos.logback.classic.Level;
+import com.expedia.www.haystack.metrics.MetricObjects;
 import com.netflix.servo.monitor.Counter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import static com.expedia.www.haystack.metrics.appenders.logback.StartUpMetric.LINE_NUMBER_OF_EMIT_START_UP_METRIC_METHOD;
-import static com.expedia.www.haystack.metrics.appenders.logback.StartUpMetric.METRIC_VALUE;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -43,26 +50,40 @@ public class StartUpMetricTest {
     @Mock
     private Counter mockCounter;
 
+    @Mock
+    private Timer mockTimer;
+
+    @Mock
+    private MetricObjects mockMetricObjects;
+
     private StartUpMetric startUpMetric;
 
     @Before
     public void setUp() {
-        startUpMetric = new StartUpMetric();
+        startUpMetric = new StartUpMetric(mockTimer, mockFactory, mockMetricObjects);
     }
 
     @After
     public void tearDown() {
-        verifyNoMoreInteractions(mockFactory, mockCounter);
+        verifyNoMoreInteractions(mockFactory);
+        verifyNoMoreInteractions(mockCounter);
+        verifyNoMoreInteractions(mockTimer);
+        verifyNoMoreInteractions(mockMetricObjects);
     }
 
     @Test
     public void testEmit() {
-        when(mockFactory.createCounter(anyString(), anyString(), anyString())).thenReturn(mockCounter);
+        when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString(), anyString()))
+                .thenReturn(mockCounter);
 
-        startUpMetric.emit(mockFactory);
+        startUpMetric.emit(mockMetricObjects, mockFactory);
 
-        verify(mockFactory).createCounter(
+        final ArgumentCaptor<TimerTask> argumentCaptor = ArgumentCaptor.forClass(TimerTask.class);
+        verify(mockTimer).scheduleAtFixedRate(argumentCaptor.capture(), eq(0L), eq(60000L));
+        final TimerTask timerTask = argumentCaptor.getValue();
+        timerTask.run();
+        verify(mockFactory, times(2)).createCounter(mockMetricObjects,
                 FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER_OF_EMIT_START_UP_METRIC_METHOD, Level.ERROR.toString());
-        verify(mockCounter).increment(METRIC_VALUE);
+        verify(mockCounter, times(2)).increment(0);
     }
 }

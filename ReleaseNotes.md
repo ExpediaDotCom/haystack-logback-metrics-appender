@@ -1,5 +1,7 @@
 # Release Notes
 
+## 0.1.8 / 2018-01-05 Shutdown heartbeat metric when appender stops
+
 ## 0.1.7 / 2017-12-20 Emit an ERROR metric, with a count of 0, every minute
 The writing of a metric to show that the appender is working now occurs in a background thread every minute;
 the value of the metric thus emitted will be 0. When an error occurs, the value of the metric will be greater than 0,

@@ -19,7 +19,6 @@ package com.expedia.www.haystack.metrics.appenders.logback;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
-import com.expedia.www.haystack.metrics.GraphiteConfig;
 import com.expedia.www.haystack.metrics.GraphiteConfigImpl;
 import com.expedia.www.haystack.metrics.MetricObjects;
 import com.expedia.www.haystack.metrics.MetricPublishing;
@@ -45,6 +44,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     private final MetricPublishing metricPublishing;
     private final MetricObjects metricObjects;
     private final Factory factory;
+    private final StartUpMetric startUpMetric;
 
     private String host = "haystack.local"; // this is the value used by Minikube
     private int port = 2003;
@@ -67,6 +67,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         this.metricPublishing = metricPublishing;
         this.metricObjects = metricObjects;
         this.factory = factory;
+        this.startUpMetric = factory.createStartUpMetric(metricObjects, new Timer());
     }
 
     // Setters are used by logback to configure the Appender.
@@ -89,31 +90,24 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     /**
      * Starts the appender by starting a background thread to poll the error counters and publish them to Graphite.
      * Multiple instances of this EmitToGraphiteLogbackAppender will only start one background thread.
+     * This method also starts the heartbeat metric background thread.
      */
     @Override
     public void start() {
-        startMetricPublishingBackgroundThread(
-                host, port, pollintervalseconds, queuesize, sendasrate);
         super.start();
-        factory.createStartUpMetric(metricObjects, new Timer());
+        metricPublishing.start(new GraphiteConfigImpl(host, port, pollintervalseconds, queuesize, sendasrate));
+        startUpMetric.start();
     }
 
     /**
      * Stops the appender, shutting down the background polling thread to ensure that the connection to the metrics
-     * database is closed.
+     * database is closed. This method also stops the heartbeat method background thread.
      */
     @Override
     public void stop() {
-        super.stop();
         metricPublishing.stop();
-    }
-
-    @VisibleForTesting
-    void startMetricPublishingBackgroundThread(
-            String host, int port, int pollintervalseconds, int queuesize, boolean sendasrate) {
-        final GraphiteConfig graphiteConfig = new GraphiteConfigImpl(
-                host, port, pollintervalseconds, queuesize, sendasrate);
-        metricPublishing.start(graphiteConfig);
+        startUpMetric.stop();
+        super.stop();
     }
 
     @Override
@@ -155,7 +149,6 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     @VisibleForTesting
     static class Factory {
-
         Counter createCounter(MetricObjects metricObjects, String application, String className, String counterName) {
             return metricObjects.createAndRegisterResettingCounter(
                     SUBSYSTEM, application, className, counterName);
@@ -164,7 +157,5 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         StartUpMetric createStartUpMetric(MetricObjects metricObjects, Timer timer) {
             return new StartUpMetric(timer, this, metricObjects);
         }
-
     }
-
 }

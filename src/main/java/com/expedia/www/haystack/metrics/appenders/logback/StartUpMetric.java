@@ -16,7 +16,6 @@
 
 package com.expedia.www.haystack.metrics.appenders.logback;
 
-import ch.qos.logback.classic.Level;
 import com.expedia.www.haystack.metrics.MetricObjects;
 import com.netflix.servo.monitor.Counter;
 
@@ -24,30 +23,42 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import static ch.qos.logback.classic.Level.ERROR;
+
 class StartUpMetric {
     private static final int METRIC_VALUE = 0;
     private static final long INITIAL_DELAY_MILLIS = 0L;
     private static final int INTERVAL_MINUTES = 1;
+    private static final String FULLY_QUALIFIED_CLASS_NAME = EmitToGraphiteLogbackAppender.changePeriodsToDashes(
+            StartUpMetric.class.getName());
+
+    private final Timer timer;
+    private final Counter counter;
 
     StartUpMetric(Timer timer, EmitToGraphiteLogbackAppender.Factory factory, MetricObjects metricObjects) {
+        this.timer = timer;
+        this.counter = factory.createCounter(metricObjects,
+                FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS, ERROR.toString());
+    }
+
+    void start() {
         timer.scheduleAtFixedRate(
                 new TimerTask() {
                     public void run() {
-                        emit(metricObjects, factory);
+                        emit();
                     }
                 },
                 INITIAL_DELAY_MILLIS,
                 TimeUnit.MINUTES.toMillis(INTERVAL_MINUTES));
     }
 
-    static final String LINE_NUMBER_OF_EMIT_START_UP_METRIC_METHOD = Integer.toString(
-            new Throwable().getStackTrace()[0].getLineNumber() + 3);
+    void stop() {
+        timer.cancel();
+    }
 
-    void emit(MetricObjects metricObjects, EmitToGraphiteLogbackAppender.Factory factory) {
-        final String fullyQualifiedClassName = EmitToGraphiteLogbackAppender.changePeriodsToDashes(
-                StartUpMetric.class.getName());
-        final Counter counter = factory.createCounter(metricObjects,
-                fullyQualifiedClassName, LINE_NUMBER_OF_EMIT_START_UP_METRIC_METHOD, Level.ERROR.toString());
+    private static final String LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS = Integer.toString(
+            new Throwable().getStackTrace()[0].getLineNumber() + 2);
+    private void emit() {
         counter.increment(METRIC_VALUE);
     }
 }

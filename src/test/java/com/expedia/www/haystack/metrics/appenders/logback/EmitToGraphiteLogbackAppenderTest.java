@@ -35,7 +35,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import static ch.qos.logback.classic.Level.DEBUG;
 import static ch.qos.logback.classic.Level.ERROR;
@@ -46,11 +45,9 @@ import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteL
 import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.SUBSYSTEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -101,6 +98,7 @@ public class EmitToGraphiteLogbackAppenderTest {
     @Before
     public void setUp() {
         factory = new Factory();
+        when(mockFactory.createStartUpMetric(any(MetricObjects.class), any(Timer.class))).thenReturn(mockStartUpMetric);
         emitToGraphiteLogbackAppender = new EmitToGraphiteLogbackAppender(
                 mockMetricPublishing, mockMetricObjects, mockFactory);
         emitToGraphiteLogbackAppender.setHost(HOST);
@@ -113,6 +111,7 @@ public class EmitToGraphiteLogbackAppenderTest {
     @After
     public void tearDown() {
         ERRORS_COUNTERS.clear();
+        verify(mockFactory).createStartUpMetric(any(MetricObjects.class), any(Timer.class));
         verifyNoMoreInteractions(mockFactory, mockCounter, mockMetricObjects, mockMetricPublishing, mockLoggingEvent,
                 mockStartUpMetric, mockTimer);
     }
@@ -133,14 +132,6 @@ public class EmitToGraphiteLogbackAppenderTest {
         assertSame(mockCounter, counter);
         verify(mockMetricObjects).createAndRegisterResettingCounter(
                 SUBSYSTEM, APPLICATION, FULLY_QUALIFIED_CLASS_NAME, COUNTER_NAME);
-    }
-
-    @Test
-    public void testFactoryCreateStartUpMetric() {
-        final StartUpMetric startUpMetric = factory.createStartUpMetric(mockMetricObjects, mockTimer);
-
-        assertNotNull(startUpMetric);
-        verify(mockTimer).scheduleAtFixedRate(any(TimerTask.class), anyLong(), anyLong());
     }
 
     @Test
@@ -181,15 +172,14 @@ public class EmitToGraphiteLogbackAppenderTest {
 
     @Test
     public void testStart() {
-        when(mockFactory.createStartUpMetric(any(MetricObjects.class), any(Timer.class))).thenReturn(mockStartUpMetric);
         when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString(), anyString()))
                 .thenReturn(mockCounter);
 
         emitToGraphiteLogbackAppender.start();
 
         assertTrue(emitToGraphiteLogbackAppender.isStarted());
-        verify(mockFactory).createStartUpMetric(any(MetricObjects.class), any(Timer.class));
         verify(mockMetricPublishing).start(GRAPHITE_CONFIG);
+        verify(mockStartUpMetric).start();
     }
 
     @Test
@@ -198,6 +188,7 @@ public class EmitToGraphiteLogbackAppenderTest {
 
         assertFalse(emitToGraphiteLogbackAppender.isStarted());
         verify(mockMetricPublishing).stop();
+        verify(mockStartUpMetric).stop();
     }
 
     @Test

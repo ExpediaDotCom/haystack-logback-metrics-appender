@@ -16,7 +16,6 @@
 
 package com.expedia.www.haystack.metrics.appenders.logback;
 
-import ch.qos.logback.classic.Level;
 import com.expedia.www.haystack.metrics.MetricObjects;
 import com.netflix.servo.monitor.Counter;
 import org.junit.After;
@@ -27,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -39,12 +39,14 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StartUpMetricTest {
+    static final String LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS = "63";
+    private static final Random RANDOM = new Random();
+    private static final String SUBSYSTEM = RANDOM.nextLong() + "SUBSYSTEM";
     private static final String FULLY_QUALIFIED_CLASS_NAME = EmitToGraphiteLogbackAppender.changePeriodsToDashes(
             StartUpMetric.class.getName());
-    private static final String LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS = "61";
 
     @Mock
-    private EmitToGraphiteLogbackAppender.Factory mockFactory;
+    private StartUpMetric.Factory mockFactory;
 
     @Mock
     private Counter mockCounter;
@@ -59,15 +61,14 @@ public class StartUpMetricTest {
 
     @Before
     public void setUp() {
-        when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString(), anyString()))
-                .thenReturn(mockCounter);
-        startUpMetric = new StartUpMetric(mockTimer, mockFactory, mockMetricObjects);
+        when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString())).thenReturn(mockCounter);
+        startUpMetric = new StartUpMetric(mockTimer, mockFactory, mockMetricObjects, SUBSYSTEM);
     }
 
     @After
     public void tearDown() {
-        verify(mockFactory).createCounter(mockMetricObjects,
-                FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS, Level.ERROR.toString());
+        verify(mockFactory).createCounter(
+                mockMetricObjects, SUBSYSTEM, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS);
         verifyNoMoreInteractions(mockFactory, mockCounter, mockTimer, mockMetricObjects);
     }
 

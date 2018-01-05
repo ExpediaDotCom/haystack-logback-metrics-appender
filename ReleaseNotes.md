@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.9 / 2018-01-05 Include subsystem in fqName of error metric
+so that the heartbeat metric is different for each subsystem. This permits writing a dashboard with two metrics (the 
+first based on the fqName tag matching the fully qualified name in the heartbeat metric and the second based on the
+fqName tag NOT matching the fully qualified name in the heartbeat metric) before any non-heartbeat errors have occurred.
+
 ## 0.1.8 / 2018-01-05 Shutdown heartbeat metric when appender stops
 
 ## 0.1.7 / 2017-12-20 Emit an ERROR metric, with a count of 0, every minute

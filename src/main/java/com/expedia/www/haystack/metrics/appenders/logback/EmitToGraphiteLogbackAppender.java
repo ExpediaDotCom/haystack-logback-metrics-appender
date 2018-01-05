@@ -37,26 +37,32 @@ import static ch.qos.logback.classic.Level.ERROR;
 @SuppressWarnings("WeakerAccess") // for the setter methods that need to be public to be used by other packages
 public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
-    static final String SUBSYSTEM = "errors";
+    static final String ERRORS_SUBSYSTEM = "errors";
     @VisibleForTesting
     static final Map<String, Counter> ERRORS_COUNTERS = new ConcurrentHashMap<>();
 
     private final MetricPublishing metricPublishing;
     private final MetricObjects metricObjects;
     private final Factory factory;
-    private final StartUpMetric startUpMetric;
 
+    // These attributes need to be configured
     private String host = "haystack.local"; // this is the value used by Minikube
+    private String subsystem;
+
+    // These attributes have sensible default values and don't need to be configured
     private int port = 2003;
     private int pollintervalseconds = 60;
     private int queuesize = 10;
     private boolean sendasrate = false;
 
+    // This attribute is not set until the appender starts
+    private StartUpMetric startUpMetric;
+
     /**
-     * The default constructor, used by logback. Logback configuration uses setters, but of the five values needed
-     * (host, port, poll interval, send as rate, and queue size), all but host are set to sensible values and probably
-     * don't need to be configured. The host should be set to the DNS name or IP host of the Graphite endpoint
-     * you wish to receive counts of errors.
+     * The default constructor, used by logback. Logback configuration uses setters, but of the six values needed
+     * (host, subsystem, port, poll interval, send as rate, and queue size), all but host and subsystem are set to
+     * sensible values and probably don't need to be configured. The host should be set to the DNS name or IP host of
+     * the Graphite endpoint you wish to receive counts of errors.
      */
     public EmitToGraphiteLogbackAppender() {
         this(new MetricPublishing(), new MetricObjects(), new Factory());
@@ -67,7 +73,6 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         this.metricPublishing = metricPublishing;
         this.metricObjects = metricObjects;
         this.factory = factory;
-        this.startUpMetric = factory.createStartUpMetric(metricObjects, new Timer());
     }
 
     // Setters are used by logback to configure the Appender.
@@ -86,6 +91,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     public void setSendasrate(boolean sendasrate) {
         this.sendasrate = sendasrate;
     }
+    public void setSubsystem(String subsystem) {
+        this.subsystem = subsystem;
+    }
 
     /**
      * Starts the appender by starting a background thread to poll the error counters and publish them to Graphite.
@@ -96,6 +104,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     public void start() {
         super.start();
         metricPublishing.start(new GraphiteConfigImpl(host, port, pollintervalseconds, queuesize, sendasrate));
+        this.startUpMetric = factory.createStartUpMetric(metricObjects, subsystem, new Timer());
         startUpMetric.start();
     }
 
@@ -106,7 +115,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @Override
     public void stop() {
         metricPublishing.stop();
-        startUpMetric.stop();
+        if(startUpMetric != null) {
+            startUpMetric.stop();
+        }
         super.stop();
     }
 
@@ -132,7 +143,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         final String key = fullyQualifiedClassName + ':' + lineNumber;
         if (!ERRORS_COUNTERS.containsKey(key)) {
             final Counter counter = factory.createCounter(
-                    metricObjects, fullyQualifiedClassName, lineNumber, level.toString());
+                    metricObjects, subsystem, fullyQualifiedClassName, lineNumber, level.toString());
 
             // It is possible but highly unlikely that two threads are in this if() block at the same time; if that
             // occurs, only one of the calls to ERRORS_COUNTERS.putIfAbsent(hashCode, counter) in the next line of code
@@ -149,13 +160,14 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     @VisibleForTesting
     static class Factory {
-        Counter createCounter(MetricObjects metricObjects, String application, String className, String counterName) {
+        Counter createCounter(MetricObjects metricObjects, String subsystem, String fullyQualifiedClassName,
+                              String lineNumber, String counterName) {
             return metricObjects.createAndRegisterResettingCounter(
-                    SUBSYSTEM, application, className, counterName);
+                    ERRORS_SUBSYSTEM, subsystem + '-' + fullyQualifiedClassName, lineNumber, counterName);
         }
 
-        StartUpMetric createStartUpMetric(MetricObjects metricObjects, Timer timer) {
-            return new StartUpMetric(timer, this, metricObjects);
+        StartUpMetric createStartUpMetric(MetricObjects metricObjects, String subsystem, Timer timer) {
+            return new StartUpMetric(timer, new StartUpMetric.Factory(), metricObjects, subsystem);
         }
     }
 }

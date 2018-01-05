@@ -18,12 +18,14 @@ package com.expedia.www.haystack.metrics.appenders.logback;
 
 import com.expedia.www.haystack.metrics.MetricObjects;
 import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.util.VisibleForTesting;
 
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import static ch.qos.logback.classic.Level.ERROR;
+import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_SUBSYSTEM;
 
 class StartUpMetric {
     private static final int METRIC_VALUE = 0;
@@ -35,10 +37,10 @@ class StartUpMetric {
     private final Timer timer;
     private final Counter counter;
 
-    StartUpMetric(Timer timer, EmitToGraphiteLogbackAppender.Factory factory, MetricObjects metricObjects) {
+    StartUpMetric(Timer timer, Factory factory, MetricObjects metricObjects, String subsystem) {
         this.timer = timer;
-        this.counter = factory.createCounter(metricObjects,
-                FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS, ERROR.toString());
+        this.counter = factory.createCounter(metricObjects, subsystem,
+                LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS);
     }
 
     void start() {
@@ -60,5 +62,14 @@ class StartUpMetric {
             new Throwable().getStackTrace()[0].getLineNumber() + 2);
     private void emit() {
         counter.increment(METRIC_VALUE);
+    }
+
+    @VisibleForTesting
+    static class Factory {
+        Counter createCounter(MetricObjects metricObjects, String subsystem, String lineNumber) {
+            final String subsystemAndFullyQualifiedClassName = subsystem + '-' + FULLY_QUALIFIED_CLASS_NAME;
+            return metricObjects.createAndRegisterResettingCounter(
+                    ERRORS_SUBSYSTEM, subsystemAndFullyQualifiedClassName, lineNumber, ERROR.toString());
+        }
     }
 }

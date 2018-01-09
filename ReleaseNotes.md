@@ -1,7 +1,10 @@
 # Release Notes
 
+## 0.1.10 / 2018-01-09 Use new haystack-metrics API for error counter
+so that the individual applications' error metrics can be identified as specific to each application
+
 ## 0.1.9 / 2018-01-05 Include subsystem in fqName of error metric
-so that the heartbeat metric is different for each subsystem. This permits writing a dashboard with two metrics (the 
+so that the heartbeat metric is different for each subsystem. This permits writing a dashboard with two metrics (the
 first based on the fqName tag matching the fully qualified name in the heartbeat metric and the second based on the
 fqName tag NOT matching the fully qualified name in the heartbeat metric) before any non-heartbeat errors have occurred.
 

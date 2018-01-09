@@ -25,7 +25,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import static ch.qos.logback.classic.Level.ERROR;
-import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_SUBSYSTEM;
+import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_METRIC_GROUP;
 
 class StartUpMetric {
     private static final int METRIC_VALUE = 0;
@@ -67,9 +67,8 @@ class StartUpMetric {
     @VisibleForTesting
     static class Factory {
         Counter createCounter(MetricObjects metricObjects, String subsystem, String lineNumber) {
-            final String subsystemAndFullyQualifiedClassName = subsystem + '-' + FULLY_QUALIFIED_CLASS_NAME;
             return metricObjects.createAndRegisterResettingCounter(
-                    ERRORS_SUBSYSTEM, subsystemAndFullyQualifiedClassName, lineNumber, ERROR.toString());
+                    ERRORS_METRIC_GROUP, subsystem, FULLY_QUALIFIED_CLASS_NAME, lineNumber, ERROR.toString());
         }
     }
 }

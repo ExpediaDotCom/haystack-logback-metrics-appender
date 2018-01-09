@@ -42,7 +42,7 @@ import static ch.qos.logback.classic.Level.INFO;
 import static ch.qos.logback.classic.Level.TRACE;
 import static ch.qos.logback.classic.Level.WARN;
 import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_COUNTERS;
-import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_SUBSYSTEM;
+import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_METRIC_GROUP;
 import static com.expedia.www.haystack.metrics.appenders.logback.StartUpMetricTest.LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -59,7 +59,6 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class EmitToGraphiteLogbackAppenderTest {
     private static final Random RANDOM = new Random();
-    private static final String APPLICATION = RANDOM.nextLong() + "APPLICATION";
     private static final String SUBSYSTEM = RANDOM.nextLong() + "SUBSYSTEM";
     private static final String HOST = RANDOM.nextLong() + "HOST";
     private static final String METHOD_NAME = RANDOM.nextLong() + "METHOD_NAME";
@@ -130,14 +129,14 @@ public class EmitToGraphiteLogbackAppenderTest {
     @Test
     public void testFactoryCreateCounter() {
         when(mockMetricObjects.createAndRegisterResettingCounter(
-                anyString(), anyString(), anyString(), anyString())).thenReturn(mockCounter);
+                anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(mockCounter);
 
         final Counter counter = factory.createCounter(
                 mockMetricObjects, SUBSYSTEM, START_UP_METRIC_FULLY_QUALIFIED_CLASS_NAME, S_LINE_NUMBER, COUNTER_NAME);
 
         assertSame(mockCounter, counter);
-        verify(mockMetricObjects).createAndRegisterResettingCounter(ERRORS_SUBSYSTEM,
-                SUBSYSTEM + '-' + START_UP_METRIC_FULLY_QUALIFIED_CLASS_NAME, S_LINE_NUMBER, COUNTER_NAME);
+        verify(mockMetricObjects).createAndRegisterResettingCounter(ERRORS_METRIC_GROUP,
+                SUBSYSTEM, START_UP_METRIC_FULLY_QUALIFIED_CLASS_NAME, S_LINE_NUMBER, COUNTER_NAME);
     }
 
     @Test
@@ -148,8 +147,8 @@ public class EmitToGraphiteLogbackAppenderTest {
         final StartUpMetric startUpMetric = factory.createStartUpMetric(mockMetricObjects, SUBSYSTEM, mockTimer);
 
         assertNotNull(startUpMetric);
-        verify(mockMetricObjects).createAndRegisterResettingCounter(ERRORS_SUBSYSTEM,
-                SUBSYSTEM + '-' + START_UP_METRIC_FULLY_QUALIFIED_CLASS_NAME,
+        verify(mockMetricObjects).createAndRegisterResettingCounter(ERRORS_METRIC_GROUP,
+                SUBSYSTEM, START_UP_METRIC_FULLY_QUALIFIED_CLASS_NAME,
                 LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS, COUNTER_NAME);
     }
 

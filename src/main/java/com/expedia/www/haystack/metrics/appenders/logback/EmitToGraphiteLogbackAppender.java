@@ -37,7 +37,7 @@ import static ch.qos.logback.classic.Level.ERROR;
 @SuppressWarnings("WeakerAccess") // for the setter methods that need to be public to be used by other packages
 public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
-    static final String ERRORS_SUBSYSTEM = "errors";
+    static final String ERRORS_METRIC_GROUP = "errors";
     @VisibleForTesting
     static final Map<String, Counter> ERRORS_COUNTERS = new ConcurrentHashMap<>();
 
@@ -163,7 +163,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         Counter createCounter(MetricObjects metricObjects, String subsystem, String fullyQualifiedClassName,
                               String lineNumber, String counterName) {
             return metricObjects.createAndRegisterResettingCounter(
-                    ERRORS_SUBSYSTEM, subsystem + '-' + fullyQualifiedClassName, lineNumber, counterName);
+                    ERRORS_METRIC_GROUP, subsystem, fullyQualifiedClassName, lineNumber, counterName);
         }
 
         StartUpMetric createStartUpMetric(MetricObjects metricObjects, String subsystem, Timer timer) {

@@ -1,4 +1,5 @@
-[![Coverage Status](https://coveralls.io/repos/github/ExpediaDotCom/haystack-logback-metrics-appender/badge.svg?branch=master)](https://coveralls.io/github/ExpediaDotCom/haystack-logback-metrics-appender?branch=master)# haystack-logback-metrics-appender
+[![Coverage Status](https://coveralls.io/repos/github/ExpediaDotCom/haystack-logback-metrics-appender/badge.svg?branch=master)](https://coveralls.io/github/ExpediaDotCom/haystack-logback-metrics-appender?branch=master)
+# haystack-logback-metrics-appender
 A logback appender that sends an error count to a graphite endpoint
 
 ## Overview

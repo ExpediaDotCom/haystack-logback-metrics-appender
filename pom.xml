@@ -55,6 +55,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <coveralls-maven-plugin-version>4.3.0</coveralls-maven-plugin-version>
         <haystack-metrics-version>0.5.0</haystack-metrics-version>
         <java.version>1.8</java.version>
         <jacoco-maven-plugin-version>0.7.9</jacoco-maven-plugin-version>
@@ -253,6 +254,14 @@
                     <serverId>ossrh</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+                <version>${coveralls-maven-plugin-version}</version>
+                <configuration>
+                    <repoToken>v2wMR7aEbFYzvPYt9yjkRnMBwRvSOxbQV</repoToken>
                 </configuration>
             </plugin>
         </plugins>

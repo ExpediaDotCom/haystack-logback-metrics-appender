@@ -17,6 +17,7 @@
 package com.expedia.www.haystack.metrics.appenders.logback;
 
 import com.expedia.www.haystack.metrics.MetricObjects;
+import com.expedia.www.haystack.metrics.appenders.logback.StartUpMetric.Factory;
 import com.netflix.servo.monitor.Counter;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +31,8 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static ch.qos.logback.classic.Level.ERROR;
+import static com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender.ERRORS_METRIC_GROUP;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -44,9 +47,10 @@ public class StartUpMetricTest {
     private static final String SUBSYSTEM = RANDOM.nextLong() + "SUBSYSTEM";
     private static final String FULLY_QUALIFIED_CLASS_NAME = EmitToGraphiteLogbackAppender.changePeriodsToDashes(
             StartUpMetric.class.getName());
+    private static final String LINE_NUMBER = Integer.toString(RANDOM.nextInt(Integer.MAX_VALUE));
 
     @Mock
-    private StartUpMetric.Factory mockFactory;
+    private Factory mockFactory;
 
     @Mock
     private Counter mockCounter;
@@ -58,11 +62,13 @@ public class StartUpMetricTest {
     private MetricObjects mockMetricObjects;
 
     private StartUpMetric startUpMetric;
+    private Factory factory;
 
     @Before
     public void setUp() {
         when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString())).thenReturn(mockCounter);
         startUpMetric = new StartUpMetric(mockTimer, mockFactory, mockMetricObjects, SUBSYSTEM);
+        factory = new Factory();
     }
 
     @After
@@ -92,5 +98,13 @@ public class StartUpMetricTest {
         startUpMetric.stop();
 
         verify(mockTimer).cancel();
+    }
+
+    @Test
+    public void testFactoryCreateCounter() {
+        factory.createCounter(mockMetricObjects, SUBSYSTEM, LINE_NUMBER);
+
+        verify(mockMetricObjects).createAndRegisterResettingCounter(
+                ERRORS_METRIC_GROUP, SUBSYSTEM, FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER, ERROR.toString());
     }
 }

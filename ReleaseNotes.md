@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.11 / 2018-02-08 Use new haystack-metrics 0.6.0
+This new version of haystack-metrics ignores IllegalStateException when shutting down the poller.
+(the IllegalStateException can happen if the poller has not been started.)
+
 ## 0.1.10 / 2018-01-09 Use new haystack-metrics API for error counter
 so that the individual applications' error metrics can be identified as specific to each application
 

@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.12 / 2018-02-08 Use new haystack-metrics 0.7.0
+The change in haystack-metrics is not needed by this haystack-logback-metrics-appender package but is made to keep
+the version of haystack-metrics in sync across all of the Haystack packages.
+
 ## 0.1.11 / 2018-02-08 Use new haystack-metrics 0.6.0
 This new version of haystack-metrics ignores IllegalStateException when shutting down the poller.
 (the IllegalStateException can happen if the poller has not been started.)

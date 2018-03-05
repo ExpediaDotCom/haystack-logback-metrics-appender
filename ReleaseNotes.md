@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.13 / 2018-03-05 Use new haystack-metrics 0.8.0
+This new version of haystack-metrics counts that number of times that the metrics polling thread was started, so that it
+can avoid shutting down that thread prematurely. This change was necessitated by the behavior of log4j2 when starting
+up.
+
 ## 0.1.12 / 2018-02-08 Use new haystack-metrics 0.7.0
 The change in haystack-metrics is not needed by this haystack-logback-metrics-appender package but is made to keep
 the version of haystack-metrics in sync across all of the Haystack packages.

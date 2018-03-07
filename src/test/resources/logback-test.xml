@@ -10,9 +10,9 @@
               class="com.expedia.www.haystack.metrics.appenders.logback.EmitToGraphiteLogbackAppender">
         <host>127.0.0.1</host>
         <subsystem>TestSubsystem</subsystem>
-        <port>2003</port>                            <!-- Configurations to default values are not needed, but    -->
-        <pollintervalseconds>60</pollintervalseconds><!-- are included in this file for reference when writing    -->
-        <queuesize>10</queuesize>                    <!-- configuration files in packages that use this Appender. -->
+        <port>2003</port>                             <!-- Configurations to default values are not needed, but    -->
+        <pollintervalseconds>300</pollintervalseconds><!-- are included in this file for reference when writing    -->
+        <queuesize>10</queuesize>                     <!-- configuration files in packages that use this Appender. -->
         <sendasrate>false</sendasrate>
     </appender>
     <root level="WARN">

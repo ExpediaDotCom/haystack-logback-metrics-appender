@@ -83,7 +83,7 @@ public class StartUpMetricTest {
         startUpMetric.start();
 
         final ArgumentCaptor<TimerTask> argumentCaptor = ArgumentCaptor.forClass(TimerTask.class);
-        verify(mockTimer).scheduleAtFixedRate(argumentCaptor.capture(), eq(0L), eq(60000L));
+        verify(mockTimer).scheduleAtFixedRate(argumentCaptor.capture(), eq(0L), eq(300000L));
         verifyThatTimerTaskRunCallsEmit(argumentCaptor);
     }
 

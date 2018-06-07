@@ -50,6 +50,7 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     private String subsystem;
 
     // These attributes have sensible default values and don't need to be configured
+    private boolean enabled = true;
     private int port = 2003;
     private int pollintervalseconds = 60;
     private int queuesize = 10;
@@ -76,6 +77,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     }
 
     // Setters are used by logback to configure the Appender.
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
     public void setHost(String host) {
         this.host = host;
     }
@@ -103,7 +107,10 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @Override
     public void start() {
         super.start();
-        metricPublishing.start(new GraphiteConfigImpl(host, port, pollintervalseconds, queuesize, sendasrate));
+        // If disabled we do not create a publisher to graphite but error counts are still collected.
+        if(enabled) {
+            metricPublishing.start(new GraphiteConfigImpl(host, port, pollintervalseconds, queuesize, sendasrate));
+        }
         this.startUpMetric = factory.createStartUpMetric(metricObjects, subsystem, new Timer());
         startUpMetric.start();
     }

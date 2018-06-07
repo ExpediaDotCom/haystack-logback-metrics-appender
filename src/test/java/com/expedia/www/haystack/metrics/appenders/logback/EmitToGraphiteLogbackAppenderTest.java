@@ -52,6 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -59,6 +60,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class EmitToGraphiteLogbackAppenderTest {
     private static final Random RANDOM = new Random();
+    private static final boolean ENABLED = true;
     private static final String SUBSYSTEM = RANDOM.nextLong() + "SUBSYSTEM";
     private static final String HOST = RANDOM.nextLong() + "HOST";
     private static final String METHOD_NAME = RANDOM.nextLong() + "METHOD_NAME";
@@ -106,6 +108,7 @@ public class EmitToGraphiteLogbackAppenderTest {
         factory = new Factory();
         emitToGraphiteLogbackAppender = new EmitToGraphiteLogbackAppender(
                 mockMetricPublishing, mockMetricObjects, mockFactory);
+        emitToGraphiteLogbackAppender.setEnabled(ENABLED);
         emitToGraphiteLogbackAppender.setHost(HOST);
         emitToGraphiteLogbackAppender.setSubsystem(SUBSYSTEM);
         emitToGraphiteLogbackAppender.setPort(PORT);
@@ -197,6 +200,20 @@ public class EmitToGraphiteLogbackAppenderTest {
 
         assertTrue(emitToGraphiteLogbackAppender.isStarted());
         commonVerifiesForStart();
+    }
+
+    @Test
+    public void testStartWhenDisabled() {
+        commonWhensForStart();
+
+        emitToGraphiteLogbackAppender.setEnabled(false);
+
+        emitToGraphiteLogbackAppender.start();
+
+        assertTrue(emitToGraphiteLogbackAppender.isStarted());
+        verify(mockMetricPublishing, never()).start(any(GraphiteConfig.class));
+        verify(mockFactory).createStartUpMetric(eq(mockMetricObjects), eq(SUBSYSTEM), any(Timer.class));
+        verify(mockStartUpMetric).start();
     }
 
     @Test

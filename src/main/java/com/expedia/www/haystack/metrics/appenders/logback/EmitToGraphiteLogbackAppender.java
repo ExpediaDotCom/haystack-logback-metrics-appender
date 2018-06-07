@@ -121,7 +121,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
      */
     @Override
     public void stop() {
-        metricPublishing.stop();
+        if(enabled) {
+            metricPublishing.stop();
+        }
         if(startUpMetric != null) {
             startUpMetric.stop();
         }

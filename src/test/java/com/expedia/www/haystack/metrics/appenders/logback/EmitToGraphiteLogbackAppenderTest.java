@@ -217,6 +217,22 @@ public class EmitToGraphiteLogbackAppenderTest {
     }
 
     @Test
+    public void testStopWhenDisabled() {
+        commonWhensForStart();
+
+        emitToGraphiteLogbackAppender.setEnabled(false);
+
+        emitToGraphiteLogbackAppender.start();
+        emitToGraphiteLogbackAppender.stop();
+
+        assertFalse(emitToGraphiteLogbackAppender.isStarted());
+        verify(mockFactory).createStartUpMetric(eq(mockMetricObjects), eq(SUBSYSTEM), any(Timer.class));
+        verify(mockStartUpMetric).start();
+        verify(mockStartUpMetric).stop();
+        verify(mockMetricPublishing, never()).stop();
+    }
+
+    @Test
     public void testStopStartUpMetricIsNotNull() {
         commonWhensForStart();
 

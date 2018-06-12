@@ -1,5 +1,8 @@
 # Release Notes
 
+## 1.0.3 / 2018-06-12 Add the ability to toggle graphite reporting on or off 
+The actual code change was made with the previous commit on 7 June 2018
+
 ## 1.0.2 / 2018-04-13 Use haystack-metrics 2.0.0
 Deployment issues with SonaType; hopefully fixed with a new version (no code changes).
 

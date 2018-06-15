@@ -1,5 +1,8 @@
 # Release Notes
 
+## 1.0.4 / 2018-06-15 Retagging after problems with uploading to SonaType
+No code changes
+
 ## 1.0.3 / 2018-06-12 Add the ability to toggle graphite reporting on or off 
 The actual code change was made with the previous commit on 7 June 2018
 

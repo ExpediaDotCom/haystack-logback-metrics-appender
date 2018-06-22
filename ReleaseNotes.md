@@ -1,5 +1,7 @@
 # Release Notes
 
+## 1.0.5 / 2018-06-22 Change haystack-metrics version to 2.0.1
+
 ## 1.0.4 / 2018-06-15 Retagging after problems with uploading to SonaType
 No code changes
 

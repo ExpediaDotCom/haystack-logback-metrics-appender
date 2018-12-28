@@ -47,7 +47,7 @@ public class StartUpMetricTest {
     private static final String SUBSYSTEM = RANDOM.nextLong() + "SUBSYSTEM";
     private static final String FULLY_QUALIFIED_CLASS_NAME = EmitToGraphiteLogbackAppender.changePeriodsToDashes(
             StartUpMetric.class.getName());
-    private static final String LINE_NUMBER = Integer.toString(RANDOM.nextInt(Integer.MAX_VALUE));
+    //private static final String LINE_NUMBER = Integer.toString(RANDOM.nextInt(Integer.MAX_VALUE));
 
     @Mock
     private Factory mockFactory;
@@ -66,7 +66,7 @@ public class StartUpMetricTest {
 
     @Before
     public void setUp() {
-        when(mockFactory.createCounter(any(MetricObjects.class), anyString(), anyString())).thenReturn(mockCounter);
+        when(mockFactory.createCounter(any(MetricObjects.class), anyString()/*, anyString()*/)).thenReturn(mockCounter);
         startUpMetric = new StartUpMetric(mockTimer, mockFactory, mockMetricObjects, SUBSYSTEM);
         factory = new Factory();
     }
@@ -74,7 +74,7 @@ public class StartUpMetricTest {
     @After
     public void tearDown() {
         verify(mockFactory).createCounter(
-                mockMetricObjects, SUBSYSTEM, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS);
+                mockMetricObjects, SUBSYSTEM/*, LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS*/);
         verifyNoMoreInteractions(mockFactory, mockCounter, mockTimer, mockMetricObjects);
     }
 
@@ -102,9 +102,9 @@ public class StartUpMetricTest {
 
     @Test
     public void testFactoryCreateCounter() {
-        factory.createCounter(mockMetricObjects, SUBSYSTEM, LINE_NUMBER);
+        factory.createCounter(mockMetricObjects, SUBSYSTEM/*, LINE_NUMBER*/);
 
         verify(mockMetricObjects).createAndRegisterResettingCounter(
-                ERRORS_METRIC_GROUP, SUBSYSTEM, FULLY_QUALIFIED_CLASS_NAME, LINE_NUMBER, ERROR.toString());
+                ERRORS_METRIC_GROUP, SUBSYSTEM, FULLY_QUALIFIED_CLASS_NAME, /*LINE_NUMBER, */ERROR.toString());
     }
 }

@@ -39,8 +39,8 @@ class StartUpMetric {
 
     StartUpMetric(Timer timer, Factory factory, MetricObjects metricObjects, String subsystem) {
         this.timer = timer;
-        this.counter = factory.createCounter(metricObjects, subsystem,
-                LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS);
+        this.counter = factory.createCounter(metricObjects, subsystem/*,
+                LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS*/);
     }
 
     void start() {
@@ -58,17 +58,17 @@ class StartUpMetric {
         timer.cancel();
     }
 
-    private static final String LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS = Integer.toString(
-            new Throwable().getStackTrace()[0].getLineNumber() + 2);
+//    private static final String LINE_NUMBER_OF_EMIT_METHOD_IN_START_UP_METRIC_CLASS = Integer.toString(
+//            new Throwable().getStackTrace()[0].getLineNumber() + 2);
     private void emit() {
         counter.increment(METRIC_VALUE);
     }
 
     @VisibleForTesting
     static class Factory {
-        Counter createCounter(MetricObjects metricObjects, String subsystem, String lineNumber) {
+        Counter createCounter(MetricObjects metricObjects, String subsystem/*, String lineNumber*/) {
             return metricObjects.createAndRegisterResettingCounter(
-                    ERRORS_METRIC_GROUP, subsystem, FULLY_QUALIFIED_CLASS_NAME, lineNumber, ERROR.toString());
+                    ERRORS_METRIC_GROUP, subsystem, FULLY_QUALIFIED_CLASS_NAME, /*lineNumber, */ERROR.toString());
         }
     }
 }

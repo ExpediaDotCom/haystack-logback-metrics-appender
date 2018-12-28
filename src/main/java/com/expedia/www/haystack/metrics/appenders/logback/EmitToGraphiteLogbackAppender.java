@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Expedia, Inc.
+ *  Copyright 2018 Expedia, Inc.
  *
  *        Licensed under the Apache License, Version 2.0 (the "License");
  *        you may not use this file except in compliance with the License.
@@ -145,14 +145,23 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
         return level == ERROR;
     }
 
+    // From https://github.com/ExpediaDotCom/haystack-logback-metrics-appender/issues/28
+    // Scaling issues with InfluxDb have led us to change the way that Graphite messages are changed into tagged metrics
+    // in InfluxDb; in particular, the InfluxDb template for the error metrics was changed from
+    // "haystack.errors.* system.metricGroup.subsystem.fqClass.host.lineNumber.measurement*" to
+    // "haystack.errors.* measurement.measurement.measurement.fqClass.host.field*". As a result, the presence of line
+    // number in the metric needs to be removed. In the interest of simplicity, I will comment out the code that inserts
+    // line number into the Graphite metric, to facilitate a potential setting-based change in the future to allow this
+    // package to create both types of Graphite metrics.
     @VisibleForTesting
     Counter getCounter(Level level, StackTraceElement stackTraceElement) {
         final String fullyQualifiedClassName = changePeriodsToDashes(stackTraceElement.getClassName());
-        final String lineNumber = Integer.toString(stackTraceElement.getLineNumber());
-        final String key = fullyQualifiedClassName + ':' + lineNumber;
+        //final String lineNumber = Integer.toString(stackTraceElement.getLineNumber());
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        final String key = fullyQualifiedClassName/* + ':' + lineNumber*/;
         if (!ERRORS_COUNTERS.containsKey(key)) {
             final Counter counter = factory.createCounter(
-                    metricObjects, subsystem, fullyQualifiedClassName, lineNumber, level.toString());
+                    metricObjects, subsystem, fullyQualifiedClassName, /*lineNumber, */level.toString());
 
             // It is possible but highly unlikely that two threads are in this if() block at the same time; if that
             // occurs, only one of the calls to ERRORS_COUNTERS.putIfAbsent(hashCode, counter) in the next line of code
@@ -170,9 +179,9 @@ public class EmitToGraphiteLogbackAppender extends AppenderBase<ILoggingEvent> {
     @VisibleForTesting
     static class Factory {
         Counter createCounter(MetricObjects metricObjects, String subsystem, String fullyQualifiedClassName,
-                              String lineNumber, String counterName) {
+                              /*String lineNumber, */String counterName) {
             return metricObjects.createAndRegisterResettingCounter(
-                    ERRORS_METRIC_GROUP, subsystem, fullyQualifiedClassName, lineNumber, counterName);
+                    ERRORS_METRIC_GROUP, subsystem, fullyQualifiedClassName, /*lineNumber, */counterName);
         }
 
         StartUpMetric createStartUpMetric(MetricObjects metricObjects, String subsystem, Timer timer) {
